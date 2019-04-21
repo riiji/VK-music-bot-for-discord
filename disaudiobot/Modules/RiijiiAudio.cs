@@ -108,6 +108,12 @@ namespace disaudiobot.Modules
             Program._data.StoreObject($"{Context.Guild.Id}.aos", client.CreatePCMStream(AudioApplication.Music));
             for (int i = startindex; i < audio.Length; ++i)
             {
+                if(audio[i].ContentRestricted!=null)
+                {
+                    await Context.Channel.SendMessageAsync($"{audio[i].Title} is restricted");
+                    continue;
+                }
+
                 CancellationTokenSource tokenSource = new CancellationTokenSource();
                 Program._data.StoreObject($"{Context.Guild.Id}.cts", tokenSource);
                 VKMusic.DownloadSongs(audio[i], path).Wait();
