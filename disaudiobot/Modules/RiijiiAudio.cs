@@ -31,7 +31,6 @@ namespace disaudiobot.Modules
             Audio[] audios;
             using (FileStream fs = new FileStream($@"{Directory.GetCurrentDirectory()}\servers\{Context.Guild.Id}\{ownerid}.dat", FileMode.OpenOrCreate, FileAccess.Read))
             {
-                Console.WriteLine($@"{Directory.GetCurrentDirectory()}\servers\{Context.Guild.Id}\{ownerid}.dat");
                 try
                 {
                     audios = Program._data.RestoreObject<Audio[]>($"{Context.Guild.Id}_{ownerid}.dat");
@@ -70,7 +69,6 @@ namespace disaudiobot.Modules
                     return;
                 }
 
-                Console.WriteLine($@"{Directory.GetCurrentDirectory()}\servers\{Context.Guild.Id}\{ownerid}.dat");
                 try
                 {
                     audios = Program._data.RestoreObject<Audio[]>($"{Context.Guild.Id}_{ownerid}.dat");
@@ -100,7 +98,6 @@ namespace disaudiobot.Modules
             audio = Program._data.RestoreObject<Audio[]>($"{Context.Guild.Id}_{ownerid}.dat");
 
             var channelid = (Context.User as IGuildUser)?.VoiceChannel.Id;
-            Console.WriteLine(channelid);
             var path = $@"{Directory.GetCurrentDirectory()}\servers\{Context.Guild.Id}\music.mp3";
 
             await StopMusic(null, false);
@@ -111,32 +108,23 @@ namespace disaudiobot.Modules
             Program._data.StoreObject($"{Context.Guild.Id}.aos", client.CreatePCMStream(AudioApplication.Music));
             for (int i = startindex; i < audio.Length; ++i)
             {
-
+                CancellationTokenSource tokenSource = new CancellationTokenSource();
+                Program._data.StoreObject($"{Context.Guild.Id}.cts", tokenSource);
                 VKMusic.DownloadSongs(audio[i], path).Wait();
                 try
                 {
-                    if (audio[i].Url == null || audio[i].Title == null || audio[i].Artist == null)
-                    {
-                        await Context.Channel.SendMessageAsync("AudioData is wrong");
-                        continue;
-                    }
-
                     var vkuser = Program._vkapi.Users.Get(new long[] { ownerid }).FirstOrDefault();
 
-                    CancellationTokenSource tokenSource = new CancellationTokenSource();
-
-                    Program._data.StoreObject($"{Context.Guild.Id}.cts", tokenSource);
-                    Task t1 = SendAsync(path);
-                    Task t2 = SongCounter(msg.Result, audio[i], vkuser, tokenSource.Token);
-
-                    await Task.WhenAny(new Task[] { t1, t2 });
+                    Task sending = SendAsync(path);
+                    Task counter =  SongCounter(msg.Result, audio[i], vkuser, tokenSource.Token);
+                    await Task.WhenAny(new Task[] { sending,counter});
                     if (tokenSource.IsCancellationRequested)
                         break;
                     tokenSource.Cancel();
                 }
                 catch (Exception e)
                 {
-                    await Context.Channel.SendMessageAsync("EE |" + e.Message);
+                    await Context.Channel.SendMessageAsync(e.Message);
                 }
             }
 
@@ -227,11 +215,9 @@ namespace disaudiobot.Modules
             // For the next step with transmitting audio, you would want to pass this Audio Client in to a service.
             var audioClient = await channel.ConnectAsync();
 
-            Console.WriteLine(channel.Id);
+            Console.WriteLine(new LogMessage(LogSeverity.Verbose, "BOT", $"joined to {channel.Id}"));
 
             Program._data.StoreObject($"{channel.Id}", audioClient);
-
-
 
             await Task.CompletedTask;
         }

@@ -13,6 +13,7 @@ using VkNet.Model.Attachments;
 using System.IO;
 using Discord.Commands;
 using System.Runtime.Serialization.Formatters.Binary;
+using Discord;
 
 namespace disaudiobot.Modules
 {
@@ -29,21 +30,20 @@ namespace disaudiobot.Modules
                 Password = password
             });
             Program._vkapi = api;
-            Console.WriteLine("joined!");
+            Console.WriteLine(new LogMessage(LogSeverity.Verbose,"VK.net","Joined"));
         }
 
 
         public static async Task GetSongs(VkApi api, int ownerid, ulong guildid)
         {
             VkCollection<Audio> audios = null;
-            Console.WriteLine("IngetSongs");
             try
             {
                 audios = await api.Audio.GetAsync(new VkNet.Model.RequestParams.AudioGetParams { OwnerId = ownerid });
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine(e.Message);
+                Console.WriteLine(new LogMessage(LogSeverity.Error,"Vk.net","Cant get audio(Token confirmation)"));
                 return;
             }
 
@@ -63,7 +63,6 @@ namespace disaudiobot.Modules
             }
 
             await Task.CompletedTask;
-            Console.WriteLine("1");
         }
 
         public static async Task DownloadSongs(Audio Song, string name)
@@ -80,7 +79,7 @@ namespace disaudiobot.Modules
             using (WebClient client = new WebClient())
             {
                 client.DownloadFile(Song.Url, name);
-                Console.WriteLine("downloaded");
+                Console.WriteLine(new LogMessage(LogSeverity.Verbose, "BOT", "Sound downloaded"));
                 await Task.CompletedTask;
             }
         }

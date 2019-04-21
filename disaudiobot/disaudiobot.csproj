@@ -148,6 +148,7 @@
   <ItemGroup>
     <Compile Include="CommandHandler.cs" />
     <Compile Include="Modules\RiijiiAudio.cs" />
+    <Compile Include="Modules\Config.cs" />
     <Compile Include="Modules\StorageData.cs" />
     <Compile Include="Modules\VKMusic.cs" />
     <Compile Include="Program.cs" />

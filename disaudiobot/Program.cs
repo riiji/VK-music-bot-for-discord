@@ -10,16 +10,16 @@ using disaudiobot.Modules;
 using VkNet;
 using VkNet.Utils;
 using VkNet.Model.Attachments;
+using Newtonsoft.Json;
+using System.IO;
+using System.Runtime.Serialization.Json;
+
 namespace disaudiobot
 {
 
 
     class Program
     {
-        string tokenbot = "";
-        string login = "";
-        string password = "";
-
         DiscordSocketClient _client;
         CommandHandler _handler;
         public static VkApi _vkapi;
@@ -34,15 +34,25 @@ namespace disaudiobot
                 LogLevel = LogSeverity.Verbose
 
             });
-            await _client.LoginAsync(TokenType.Bot, tokenbot);
+            Config _cfg;
+            DataContractJsonSerializer jsonSerializer = new DataContractJsonSerializer(typeof(Config));
+            using (FileStream fs = new FileStream("config.json", FileMode.OpenOrCreate))
+            {
+                _cfg = (Config)jsonSerializer.ReadObject(fs);
+
+            }
+
+
+
+            await _client.LoginAsync(TokenType.Bot, _cfg.Token);
             await _client.StartAsync();
 
             _client.Log += Log;
             _handler = new CommandHandler();
-            await VKMusic.Join(login, password);
+            await VKMusic.Join(_cfg.Login, _cfg.Password);
 
 
-            await _handler.InitializeAsync(_client);
+            await _handler.InitializeAsync(_client,_cfg);
 
 
             await Task.Delay(-1);
