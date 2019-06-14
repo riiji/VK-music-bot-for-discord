@@ -14,6 +14,7 @@ using System.IO;
 using Discord.Commands;
 using System.Runtime.Serialization.Formatters.Binary;
 using Discord;
+using System.Threading;
 
 namespace disaudiobot.Modules
 {
@@ -44,6 +45,7 @@ namespace disaudiobot.Modules
             catch (Exception)
             {
                 Console.WriteLine(new LogMessage(LogSeverity.Error,"Vk.net","Cant get audio(Token confirmation)"));
+
                 return;
             }
 
@@ -67,6 +69,7 @@ namespace disaudiobot.Modules
 
         public static async Task DownloadSongs(Audio Song, string name)
         {
+
             if (Song.Url == null || name == null)
             {
                 if (Song.Url == null)
@@ -75,14 +78,50 @@ namespace disaudiobot.Modules
                     throw new ArgumentException("Name is equal to null!");
             }
 
+            if(Song.Url.AbsoluteUri.Contains("m3u8"))
+            {
+                Song.Url = FixUrl(Song.Url);
+            }
+
+            Console.WriteLine(new LogMessage(LogSeverity.Info, "BOT", $"{Song.Url}"));
+
+            
 
             using (WebClient client = new WebClient())
             {
                 client.DownloadFile(Song.Url, name);
                 Console.WriteLine(new LogMessage(LogSeverity.Verbose, "BOT", "Sound downloaded"));
+                Thread.Sleep(100);
                 await Task.CompletedTask;
             }
         }
 
+        private static Uri FixUrl(Uri url)
+        {
+            string uri = url.AbsoluteUri;
+
+            uri = uri.Replace("/index.m3u8", ".mp3");
+
+            int fi = 0;
+            int li = 0;
+
+            int count = 0;
+
+            for (int i = 0; i < uri.Length; ++i)
+            {
+                if (uri[i] == '/')
+                    ++count;
+                if (count == 4 && fi == 0)
+                    fi = i;
+                if (count == 5)
+                {
+                    li = i;
+                    break;
+                }
+            }
+
+            uri = uri.Remove(fi,li-fi);
+            return new Uri(uri);
+        }
     }
 }

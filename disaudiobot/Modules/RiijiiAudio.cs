@@ -20,14 +20,13 @@ namespace disaudiobot.Modules
         int countstars = 8; //count of stars in progress bar
         Color color = new Color(85, 172, 238); //color of embeded text
         int playlistcounter = 20;
-
         BinaryFormatter formatter = new BinaryFormatter();
         [Command("uploadplaylist", RunMode = RunMode.Async)]
         public async Task UploadSongs(int ownerid)
         {
             Directory.CreateDirectory($@"{Directory.GetCurrentDirectory()}\servers\{Context.Guild.Id}");
 
-            await VKMusic.GetSongs(Program._vkapi, ownerid, Context.Guild.Id); 
+            await VKMusic.GetSongs(Program._vkapi, ownerid, Context.Guild.Id);
             Audio[] audios;
             using (FileStream fs = new FileStream($@"{Directory.GetCurrentDirectory()}\servers\{Context.Guild.Id}\{ownerid}.dat", FileMode.OpenOrCreate, FileAccess.Read))
             {
@@ -108,7 +107,7 @@ namespace disaudiobot.Modules
             Program._data.StoreObject($"{Context.Guild.Id}.aos", client.CreatePCMStream(AudioApplication.Music));
             for (int i = startindex; i < audio.Length; ++i)
             {
-                if(audio[i].ContentRestricted!=null)
+                if (audio[i].ContentRestricted != null)
                 {
                     await Context.Channel.SendMessageAsync($"{audio[i].Title} is restricted");
                     continue;
@@ -119,14 +118,15 @@ namespace disaudiobot.Modules
                 VKMusic.DownloadSongs(audio[i], path).Wait();
                 try
                 {
-                    var vkuser = Program._vkapi.Users.Get(new long[] { ownerid }).FirstOrDefault();
+                    var vkuser = Program._vkapi.Users.Get(new long[] { ownerid },VkNet.Enums.Filters.ProfileFields.Photo200).FirstOrDefault();
 
+                    Task counter = SongCounter(msg.Result, audio[i], vkuser,i, tokenSource.Token);
                     Task sending = SendAsync(path);
-                    Task counter =  SongCounter(msg.Result, audio[i], vkuser, tokenSource.Token);
-                    await Task.WhenAny(new Task[] { sending,counter});
+                    await Task.WhenAny(new Task[] { sending, counter });
                     if (tokenSource.IsCancellationRequested)
                         break;
                     tokenSource.Cancel();
+                    Console.WriteLine(new LogMessage(LogSeverity.Info, "BOT", "Token cancelled"));
                 }
                 catch (Exception e)
                 {
@@ -136,7 +136,7 @@ namespace disaudiobot.Modules
 
         }
 
-        public async Task SongCounter(IUserMessage msg, Audio audio, User vkuser, CancellationToken token)
+        public async Task SongCounter(IUserMessage msg, Audio audio, User vkuser, int songnumber, CancellationToken token)
         {
             Stopwatch clock = new Stopwatch();
             clock.Start();
@@ -146,12 +146,13 @@ namespace disaudiobot.Modules
             string msgtoserver = "";
             EmbedBuilder embed = new EmbedBuilder();
             embed.WithColor(color);
-            embed.WithAuthor($"{vkuser.FirstName} {vkuser.LastName}");
+            embed.WithAuthor($"{vkuser.FirstName} {vkuser.LastName}",vkuser.Photo200.AbsoluteUri, ("https://vk.com/id"+vkuser.Id));
+
             while (token.IsCancellationRequested == false)
             {
                 msgtoserver = "";
 
-                msgtoserver += $"**Current song:** {audio.Title}\n**Author:** {audio.Artist}\n**Duration:** {audio.Duration}s\n";
+                msgtoserver += $"**Current song:** {audio.Title}\n**Author:** {audio.Artist}\n**Duration:** {audio.Duration}s\n**Number:** {songnumber}\n";
 
                 int stars = (int)(clock.ElapsedMilliseconds / (seconds * 1000));
 
@@ -194,7 +195,7 @@ namespace disaudiobot.Modules
             }
             embed.WithDescription(msg);
 
-            await Context.Channel.SendMessageAsync("",false,embed.Build());
+            await Context.Channel.SendMessageAsync("", false, embed.Build());
 
         }
 
@@ -257,7 +258,7 @@ namespace disaudiobot.Modules
                 finally
                 {
                     await discord.FlushAsync();
-                    
+
                 }
 
             }
