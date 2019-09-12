@@ -22,38 +22,35 @@ namespace disaudiobot
     {
         DiscordSocketClient _client;
         CommandHandler _handler;
-        public static VkApi _vkapi;
+        public static VkApi _vkApi;
         public static StorageData _data = new StorageData();
 
         static void Main(string[] args) => new Program().MainAsync().GetAwaiter().GetResult();
 
         public async Task MainAsync()
         {
+
             _client = new DiscordSocketClient(new DiscordSocketConfig
             {
                 LogLevel = LogSeverity.Verbose
 
             });
-            Config _cfg;
+
             DataContractJsonSerializer jsonSerializer = new DataContractJsonSerializer(typeof(Config));
             using (FileStream fs = new FileStream("config.json", FileMode.OpenOrCreate))
             {
-                _cfg = (Config)jsonSerializer.ReadObject(fs);
-
+                Utils._cfg = (Config)jsonSerializer.ReadObject(fs);
             }
 
 
-
-            await _client.LoginAsync(TokenType.Bot, _cfg.Token);
+            await _client.LoginAsync(TokenType.Bot, Utils._cfg.Token);
             await _client.StartAsync();
 
             _client.Log += Log;
             _handler = new CommandHandler();
-            await VKMusic.Join(_cfg.Login, _cfg.Password);
 
-
-            await _handler.InitializeAsync(_client,_cfg);
-
+            await VKMusic.AuthAsync(Utils._cfg.Login, Utils._cfg.Password);
+            await _handler.InitializeAsync(_client,Utils._cfg);
 
             await Task.Delay(-1);
         }

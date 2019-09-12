@@ -15,47 +15,47 @@ using VkNet.Model.Attachments;
 
 namespace disaudiobot.Modules
 {
-    public class RiijiiAudio : ModuleBase<ICommandContext>
+    public class RiijiiAudio : ModuleBase<SocketCommandContext>
     {
-        int countstars = 8; //count of stars in progress bar
-        Color color = new Color(85, 172, 238); //color of embeded text
-        int playlistcounter = 20;
+        Color color = new Color(85, 172, 238);
         BinaryFormatter formatter = new BinaryFormatter();
+
+
+        /// <summary>
+        /// Uploading playlist in memory
+        /// </summary>
+        /// <param name="ownerid"></param>
+        /// <returns></returns>
         [Command("uploadplaylist", RunMode = RunMode.Async)]
-        public async Task UploadSongs(int ownerid)
+        public async Task UploadPlaylist(int ownerid)
         {
             Directory.CreateDirectory($@"{Directory.GetCurrentDirectory()}\servers\{Context.Guild.Id}");
 
-            await VKMusic.GetSongs(Program._vkapi, ownerid, Context.Guild.Id);
-            Audio[] audios;
+            await VKMusic.GetPlaylistInFile(Program._vkApi, ownerid, Context.Guild.Id);
+
             using (FileStream fs = new FileStream($@"{Directory.GetCurrentDirectory()}\servers\{Context.Guild.Id}\{ownerid}.dat", FileMode.OpenOrCreate, FileAccess.Read))
             {
-                try
-                {
-                    audios = Program._data.RestoreObject<Audio[]>($"{Context.Guild.Id}_{ownerid}.dat");
-                }
-                catch (ArgumentException)
-                {
-                    Program._data.StoreObject($"{Context.Guild.Id}_{ownerid}.dat", (Audio[])formatter.Deserialize(fs));
-                }
+                Program._data.StoreObject($"{Context.Guild.Id}_{ownerid}.dat", (Audio[])formatter.Deserialize(fs));
             }
+
             await Context.Channel.SendMessageAsync("Playlist downloaded successful");
             await Task.CompletedTask;
-
         }
 
+        /// <summary>
+        /// Uploading playlist with file
+        /// </summary>
+        /// <param name="ownerid">VK user id</param>
+        /// <returns></returns>
         [Command("uploadplaylistsilent", RunMode = RunMode.Async)]
-        public async Task UploadSongsSilent(int ownerid)
+        public async Task UploadPlaylistSilent(int ownerid)
         {
             Directory.CreateDirectory($@"{Directory.GetCurrentDirectory()}\servers\{Context.Guild.Id}");
-
-            Audio[] audios;
-
 
             if (!File.Exists($@"{Directory.GetCurrentDirectory()}\servers\{Context.Guild.Id}\{ownerid}.dat"))
             {
                 await Context.Channel.SendMessageAsync("Trying to upload playlist...");
-                await UploadSongs(ownerid);
+                await UploadPlaylist(ownerid);
                 return;
             }
 
@@ -64,18 +64,11 @@ namespace disaudiobot.Modules
                 if (fs.Length == 0)
                 {
                     await Context.Channel.SendMessageAsync("Trying to serialize file...");
-                    await UploadSongs(ownerid);
+                    await UploadPlaylist(ownerid);
                     return;
                 }
 
-                try
-                {
-                    audios = Program._data.RestoreObject<Audio[]>($"{Context.Guild.Id}_{ownerid}.dat");
-                }
-                catch (ArgumentException)
-                {
-                    Program._data.StoreObject($"{Context.Guild.Id}_{ownerid}.dat", (Audio[])formatter.Deserialize(fs));
-                }
+                Program._data.StoreObject($"{Context.Guild.Id}_{ownerid}.dat", (Audio[])formatter.Deserialize(fs));
             }
             await Task.CompletedTask;
 
@@ -89,21 +82,21 @@ namespace disaudiobot.Modules
             if (forceupdate)
             {
                 await Context.Channel.SendMessageAsync("Trying to force update playlist...");
-                await UploadSongs(ownerid);
+                await UploadPlaylist(ownerid);
             }
             else
-                await UploadSongsSilent(ownerid);
+                await UploadPlaylistSilent(ownerid);
 
             audio = Program._data.RestoreObject<Audio[]>($"{Context.Guild.Id}_{ownerid}.dat");
 
-            var channelid = (Context.User as IGuildUser)?.VoiceChannel.Id;
+            var channelId = (Context.User as IGuildUser)?.VoiceChannel.Id;
             var path = $@"{Directory.GetCurrentDirectory()}\servers\{Context.Guild.Id}\music.mp3";
 
             await StopMusic(null, false);
             await JoinChannel();
 
             var msg = Context.Channel.SendMessageAsync("", false, new EmbedBuilder().Build());
-            IAudioClient client = Program._data.RestoreObject<IAudioClient>($"{channelid}");
+            IAudioClient client = Program._data.RestoreObject<IAudioClient>($"{channelId}");
             Program._data.StoreObject($"{Context.Guild.Id}.aos", client.CreatePCMStream(AudioApplication.Music));
             for (int i = startindex; i < audio.Length; ++i)
             {
@@ -118,9 +111,9 @@ namespace disaudiobot.Modules
                 VKMusic.DownloadSongs(audio[i], path).Wait();
                 try
                 {
-                    var vkuser = Program._vkapi.Users.Get(new long[] { ownerid },VkNet.Enums.Filters.ProfileFields.Photo200).FirstOrDefault();
+                    var vkuser = Program._vkApi.Users.Get(new long[] { ownerid }, VkNet.Enums.Filters.ProfileFields.Photo200).FirstOrDefault();
 
-                    Task counter = SongCounter(msg.Result, audio[i], vkuser,i, tokenSource.Token);
+                    Task counter = SongCounter(msg.Result, audio[i], vkuser, i, tokenSource.Token);
                     Task sending = SendAsync(path);
                     await Task.WhenAny(new Task[] { sending, counter });
                     if (tokenSource.IsCancellationRequested)
@@ -141,28 +134,28 @@ namespace disaudiobot.Modules
             Stopwatch clock = new Stopwatch();
             clock.Start();
 
-            int seconds = audio.Duration / countstars;
+            int seconds = audio.Duration / Utils._cfg.StarsCount;
 
-            string msgtoserver = "";
+            string msgToServer = "";
             EmbedBuilder embed = new EmbedBuilder();
             embed.WithColor(color);
-            embed.WithAuthor($"{vkuser.FirstName} {vkuser.LastName}",vkuser.Photo200.AbsoluteUri, ("https://vk.com/id"+vkuser.Id));
+            embed.WithAuthor($"{vkuser.FirstName} {vkuser.LastName}", vkuser.Photo200.AbsoluteUri, ("https://vk.com/id" + vkuser.Id));
 
             while (token.IsCancellationRequested == false)
             {
-                msgtoserver = "";
+                msgToServer = "";
 
-                msgtoserver += $"**Current song:** {audio.Title}\n**Author:** {audio.Artist}\n**Duration:** {audio.Duration}s\n**Number:** {songnumber}\n";
+                msgToServer += $"**Current song:** {audio.Title}\n**Author:** {audio.Artist}\n**Duration:** {audio.Duration}s\n**Number:** {songnumber}\n";
 
                 int stars = (int)(clock.ElapsedMilliseconds / (seconds * 1000));
 
                 for (int i = 0; i < stars; ++i)
-                    msgtoserver += "🔹";
+                    msgToServer += "🔹";
 
-                for (int i = 0; i < countstars - stars; ++i)
-                    msgtoserver += "🔸";
+                for (int i = 0; i < Utils._cfg.StarsCount - stars; ++i)
+                    msgToServer += "🔸";
 
-                embed.WithDescription(msgtoserver);
+                embed.WithDescription(msgToServer);
                 if (msg.Embeds.FirstOrDefault().ToEmbedBuilder().Description != embed.Description)
                     await msg.ModifyAsync(x => x.Embed = embed.Build());
                 Thread.Sleep(2000);
@@ -176,7 +169,7 @@ namespace disaudiobot.Modules
         {
             EmbedBuilder embed = new EmbedBuilder();
             embed.WithColor(color);
-            await UploadSongsSilent(ownerid);
+            await UploadPlaylistSilent(ownerid);
             Audio[] audio = null;
             try
             {
@@ -189,7 +182,7 @@ namespace disaudiobot.Modules
             }
 
             string msg = "";
-            for (int i = numberlist * playlistcounter; i <= playlistcounter * (numberlist + 1) && i < audio.Length; ++i)
+            for (int i = numberlist * Utils._cfg.GetPlaylistCount; i <= Utils._cfg.GetPlaylistCount * (numberlist + 1) && i < audio.Length; ++i)
             {
                 msg += $"{i} | {audio[i].Artist} - {audio[i].Title}\n";
             }

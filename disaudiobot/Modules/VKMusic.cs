@@ -20,7 +20,13 @@ namespace disaudiobot.Modules
 {
     class VKMusic
     {
-        public static async Task Join(string login, string password)
+        /// <summary>
+        /// Auth in VK async
+        /// </summary>
+        /// <param name="login">VK login</param>
+        /// <param name="password">VK password</param>
+        /// <returns></returns>
+        public static async Task AuthAsync(string login, string password)
         {
             var services = new ServiceCollection();
             services.AddAudioBypass();
@@ -30,12 +36,37 @@ namespace disaudiobot.Modules
                 Login = login,
                 Password = password
             });
-            Program._vkapi = api;
+            Program._vkApi = api;
             Console.WriteLine(new LogMessage(LogSeverity.Verbose,"VK.net","Joined"));
         }
 
+        /// <summary>
+        /// Auth in VK
+        /// </summary>
+        /// <param name="login">VK login</param>
+        /// <param name="password">VK password</param>
+        public static void Auth(string login, string password)
+        {
+            var services = new ServiceCollection();
+            services.AddAudioBypass();
+            var api = new VkApi(services);
+            api.Authorize(new VkNet.Model.ApiAuthParams
+            {
+                Login = login,
+                Password = password
+            });
+            Program._vkApi = api;
+            Console.WriteLine(new LogMessage(LogSeverity.Verbose, "VK.net", "Joined"));
+        }
 
-        public static async Task GetSongs(VkApi api, int ownerid, ulong guildid)
+        /// <summary>
+        /// Get a VK user playlist into \servers\*current server*\*userid*.dat
+        /// </summary>
+        /// <param name="api">VK account</param>
+        /// <param name="ownerid">VK user's id</param>
+        /// <param name="guildid">User's guildid</param>
+        /// <returns></returns>
+        public static async Task GetPlaylistInFile(VkApi api, int ownerid, ulong guildid)
         {
             VkCollection<Audio> audios = null;
             try
@@ -49,11 +80,7 @@ namespace disaudiobot.Modules
                 return;
             }
 
-            Audio[] audio = new Audio[audios.Count];
-            for (int i = 0; i < audio.Length; ++i)
-            {
-                audio[i] = audios[i];
-            }
+            Audio[] audio = audios.ToArray();
 
             BinaryFormatter formatter = new BinaryFormatter();
 
@@ -67,6 +94,12 @@ namespace disaudiobot.Modules
             await Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Download song into \servers
+        /// </summary>
+        /// <param name="Song">Song</param>
+        /// <param name="name">Name of file(music.mp3)</param>
+        /// <returns></returns>
         public static async Task DownloadSongs(Audio Song, string name)
         {
 
@@ -78,15 +111,16 @@ namespace disaudiobot.Modules
                     throw new ArgumentException("Name is equal to null!");
             }
 
+            // trying to fix corrupted url
             if(Song.Url.AbsoluteUri.Contains("m3u8"))
             {
-                Song.Url = FixUrl(Song.Url);
+                Song.Url = Utils.FixUrl(Song.Url);
             }
 
             Console.WriteLine(new LogMessage(LogSeverity.Info, "BOT", $"{Song.Url}"));
 
             
-
+            // downloading music file from vk server
             using (WebClient client = new WebClient())
             {
                 client.DownloadFile(Song.Url, name);
@@ -94,34 +128,6 @@ namespace disaudiobot.Modules
                 Thread.Sleep(100);
                 await Task.CompletedTask;
             }
-        }
-
-        private static Uri FixUrl(Uri url)
-        {
-            string uri = url.AbsoluteUri;
-
-            uri = uri.Replace("/index.m3u8", ".mp3");
-
-            int fi = 0;
-            int li = 0;
-
-            int count = 0;
-
-            for (int i = 0; i < uri.Length; ++i)
-            {
-                if (uri[i] == '/')
-                    ++count;
-                if (count == 4 && fi == 0)
-                    fi = i;
-                if (count == 5)
-                {
-                    li = i;
-                    break;
-                }
-            }
-
-            uri = uri.Remove(fi,li-fi);
-            return new Uri(uri);
         }
     }
 }

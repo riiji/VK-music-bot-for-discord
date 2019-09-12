@@ -150,6 +150,7 @@
     <Compile Include="Modules\RiijiiAudio.cs" />
     <Compile Include="Modules\Config.cs" />
     <Compile Include="Modules\StorageData.cs" />
+    <Compile Include="Modules\Utils.cs" />
     <Compile Include="Modules\VKMusic.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

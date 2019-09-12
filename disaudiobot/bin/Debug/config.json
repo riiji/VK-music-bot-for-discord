@@ -2,5 +2,8 @@
   "Login": "",
   "Password": "",
   "Token": "",
-  "Prefix": ""
+  "Prefix": "",
+  "StarsCount": "8",
+  "GetPlaylistCount": "20"
+
 }
