@@ -30,5 +30,13 @@ namespace disaudiobot.Modules
         [DataMember]
         public int GetPlaylistCount { get; set; }
 
+        
+        [DataMember]
+        public uint ColorValue { get; set; }
+
+
+        [IgnoreDataMember]
+        public Color Color;
+
     }
 }

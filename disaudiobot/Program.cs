@@ -29,7 +29,6 @@ namespace disaudiobot
 
         public async Task MainAsync()
         {
-
             _client = new DiscordSocketClient(new DiscordSocketConfig
             {
                 LogLevel = LogSeverity.Verbose
@@ -42,6 +41,7 @@ namespace disaudiobot
                 Utils._cfg = (Config)jsonSerializer.ReadObject(fs);
             }
 
+            Utils._cfg.Color = new Color(Utils._cfg.ColorValue);
 
             await _client.LoginAsync(TokenType.Bot, Utils._cfg.Token);
             await _client.StartAsync();

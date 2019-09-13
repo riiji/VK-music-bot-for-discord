@@ -17,7 +17,6 @@ namespace disaudiobot.Modules
 {
     public class RiijiiAudio : ModuleBase<SocketCommandContext>
     {
-        Color color = new Color(85, 172, 238);
         BinaryFormatter formatter = new BinaryFormatter();
 
 
@@ -138,7 +137,7 @@ namespace disaudiobot.Modules
 
             string msgToServer = "";
             EmbedBuilder embed = new EmbedBuilder();
-            embed.WithColor(color);
+            embed.WithColor(Utils._cfg.Color);
             embed.WithAuthor($"{vkuser.FirstName} {vkuser.LastName}", vkuser.Photo200.AbsoluteUri, ("https://vk.com/id" + vkuser.Id));
 
             while (token.IsCancellationRequested == false)
@@ -168,7 +167,7 @@ namespace disaudiobot.Modules
         public async Task GetPlaylist(int ownerid, int numberlist = 0)
         {
             EmbedBuilder embed = new EmbedBuilder();
-            embed.WithColor(color);
+            embed.WithColor(Utils._cfg.ColorValue);
             await UploadPlaylistSilent(ownerid);
             Audio[] audio = null;
             try

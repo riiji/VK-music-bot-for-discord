@@ -2,8 +2,8 @@
   "Login": "",
   "Password": "",
   "Token": "",
-  "Prefix": "",
+  "Prefix": "!",
   "StarsCount": "8",
-  "GetPlaylistCount": "20"
-
+  "GetPlaylistCount": "20",
+  "ColorValue":"5614830"
 }
