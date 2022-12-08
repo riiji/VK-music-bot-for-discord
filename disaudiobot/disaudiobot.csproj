@@ -9,7 +9,7 @@
 
     <ItemGroup>
       <PackageReference Include="Discord.Net" Version="2.2.0" />
-      <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
       <PackageReference Include="VkNet" Version="1.52.0" />
       <PackageReference Include="VkNet.AudioBypassService" Version="1.6.0" />
     </ItemGroup>
